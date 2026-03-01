@@ -1,66 +1,417 @@
-import { useState, useEffect, useRef } from "react";
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>🌸 さくら先生的日語教室</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif; min-height: 100vh;
+    background: linear-gradient(135deg, #fff0f5 0%, #f0f4ff 50%, #f0fff4 100%); }
 
-const TOPICS = [
-  { id: "greet", label: "日常打招呼", emoji: "👋", hint: "你好、謝謝、對不起" },
-  { id: "food", label: "點餐買東西", emoji: "🍜", hint: "餐廳、便利商店、市場" },
-  { id: "transport", label: "交通移動", emoji: "🚃", hint: "電車、計程車、問路" },
-  { id: "shopping", label: "購物逛街", emoji: "🛍️", hint: "價格、尺寸、試穿" },
-  { id: "work", label: "職場辦公", emoji: "💼", hint: "會議、郵件、同事" },
-  { id: "hobby", label: "興趣愛好", emoji: "🎮", hint: "運動、音樂、旅行" },
-];
+  /* ── Header ── */
+  #header { background: linear-gradient(90deg, #ff6b9d, #c84b97, #7b5ea7);
+    padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 4px 15px rgba(200,75,151,.3); }
+  #header .title { color:#fff; font-weight:900; font-size:16px; }
+  #header .subtitle { color:#ffd6ea; font-size:11px; }
+  .badge { background:rgba(255,255,255,.2); border-radius:20px; padding:3px 10px; color:#fff; font-size:12px; }
+  #badges { display:flex; gap:8px; align-items:center; }
 
-const OTARU_TOPICS = [
-  { id: "school", label: "語言學校報到", emoji: "🏫", hint: "第一天去語言學校、自我介紹、問教室在哪" },
-  { id: "homestay", label: "寄宿家庭生活", emoji: "🏠", hint: "和房東說話、用餐禮儀、洗澡時間詢問" },
-  { id: "convenience", label: "便利商店生存", emoji: "🏪", hint: "7-11買早餐、用電子支付、問店員問題" },
-  { id: "canal", label: "小樽運河散步", emoji: "⛵", hint: "問路、拍照請人幫忙、找到網美景點" },
-  { id: "sushi", label: "壽司店點餐", emoji: "🍣", hint: "小樽壽司通、點迴轉壽司、結帳說話" },
-  { id: "glassware", label: "玻璃工藝品店", emoji: "🔮", hint: "問價格、討論顏色款式、包裝成禮物" },
-  { id: "snow", label: "雪地緊急狀況", emoji: "❄️", hint: "滑倒了、找不到路、手機快沒電借充電" },
-  { id: "train", label: "JR電車通勤", emoji: "🚂", hint: "每天坐JR從小樽到札幌上課的對話" },
-  { id: "doctor", label: "看醫生藥局", emoji: "🏥", hint: "感冒了、買藥、說明症狀" },
-  { id: "friend", label: "認識日本同學", emoji: "🧑‍🤝‍🧑", hint: "班上的日本朋友、LINE交換、放學後約玩" },
-  { id: "market", label: "三角市場買海鮮", emoji: "🦀", hint: "小樽的海鮮市場、討價還價、試吃對話" },
-  { id: "homesick", label: "想家了怎麼辦", emoji: "😢", hint: "跟房東說心情、打電話給爸媽、寫明信片" },
-];
+  /* ── Tabs ── */
+  #tabs { display:flex; background:#fff; border-bottom:3px solid #ffd6ea; overflow-x:auto; }
+  .tab-btn { flex:0 0 auto; padding:11px 14px; border:none; cursor:pointer; font-size:13px;
+    background:#fff; color:#888; border-bottom:3px solid transparent; margin-bottom:-3px;
+    white-space:nowrap; font-family:inherit; transition:all .2s; font-weight:500; }
+  .tab-btn.active { background:#fff0f8; color:#c84b97; font-weight:800; border-bottom-color:#c84b97; }
 
-const HIRAGANA_ROWS = [
-  { row: "あ行", chars: ["あ","い","う","え","お"], romaji: ["a","i","u","e","o"] },
-  { row: "か行", chars: ["か","き","く","け","こ"], romaji: ["ka","ki","ku","ke","ko"] },
-  { row: "さ行", chars: ["さ","し","す","せ","そ"], romaji: ["sa","shi","su","se","so"] },
-  { row: "た行", chars: ["た","ち","つ","て","と"], romaji: ["ta","chi","tsu","te","to"] },
-  { row: "な行", chars: ["な","に","ぬ","ね","の"], romaji: ["na","ni","nu","ne","no"] },
-  { row: "は行", chars: ["は","ひ","ふ","へ","ほ"], romaji: ["ha","hi","fu","he","ho"] },
-  { row: "ま行", chars: ["ま","み","む","め","も"], romaji: ["ma","mi","mu","me","mo"] },
-  { row: "や行", chars: ["や","","ゆ","","よ"], romaji: ["ya","","yu","","yo"] },
-  { row: "ら行", chars: ["ら","り","る","れ","ろ"], romaji: ["ra","ri","ru","re","ro"] },
-  { row: "わ行", chars: ["わ","","","","を"], romaji: ["wa","","","","wo"] },
-  { row: "ん", chars: ["ん","","","",""], romaji: ["n","","","",""] },
-];
+  /* ── Layout ── */
+  #app { height: calc(100vh - 97px); }
+  .page { display:none; height:100%; }
+  .page.active { display:flex; flex-direction:column; }
+  .scroll-page { display:none; height:100%; overflow-y:auto; padding:14px; }
+  .scroll-page.active { display:block; }
 
-const OTARU_PLAN = [
-  { week: 1, title: "抵達・適應期", color: "#ff6b9d", tasks: ["完成語言學校報到手續","跟寄宿家庭自我介紹","學會搭JR到市區","認識便利商店購物流程","學50音 あ〜さ行"] },
-  { week: 2, title: "探索小樽", color: "#7b5ea7", tasks: ["小樽運河散步拍照","壽司通吃午餐獨自點餐","玻璃工藝品店選紀念品","認識班上同學交換LINE","學50音 た〜は行"] },
-  { week: 3, title: "深入融入", color: "#00b4d8", tasks: ["三角市場買海鮮挑戰","JR去札幌大通公園","嘗試和日本同學放學後活動","學校發表自我介紹短篇","學50音 ま〜わ行"] },
-  { week: 4, title: "成長收穫", color: "#4caf50", tasks: ["獨自規劃一日小旅行","寫明信片寄回台灣給家人","學校期末小測驗準備","整理一個月單字筆記","回顧＆慶祝！"] },
-];
+  /* ── Chat layout ── */
+  #chat-wrap { display:flex; height:100%; }
+  #sidebar { width:128px; background:#fff; border-right:2px solid #ffd6ea;
+    display:flex; flex-direction:column; overflow-y:auto; }
+  #sidebar .sec-title { font-size:11px; color:#c84b97; font-weight:700; padding:6px 8px 2px; }
+  #topic-list { overflow-y:auto; padding:0 6px 8px; }
+  .topic-btn { display:flex; flex-direction:column; align-items:center; width:100%;
+    padding:8px 4px; margin-bottom:5px; border:2px solid #ffd6ea; border-radius:10px;
+    background:#fff; cursor:pointer; transition:all .2s; font-family:inherit; }
+  .topic-btn.active { border-color:#c84b97; background:#fff0f8; }
+  .topic-btn .t-emoji { font-size:20px; }
+  .topic-btn .t-label { font-size:10px; color:#555; margin-top:3px; text-align:center; line-height:1.3; }
 
-const SURVIVAL_PHRASES = [
-  { jp: "すみません、〜はどこですか？", romaji: "Sumimasen, ~ wa doko desu ka?", zh: "請問，〜在哪裡？", tag: "問路" },
-  { jp: "これをください。", romaji: "Kore o kudasai.", zh: "請給我這個。", tag: "購物" },
-  { jp: "いくらですか？", romaji: "Ikura desu ka?", zh: "多少錢？", tag: "購物" },
-  { jp: "〜をお願いします。", romaji: "~ o onegaishimasu.", zh: "麻煩請給我〜", tag: "點餐" },
-  { jp: "ありがとうございます。", romaji: "Arigatou gozaimasu.", zh: "非常謝謝您。", tag: "禮貌" },
-  { jp: "わかりません。", romaji: "Wakarimasen.", zh: "我不懂。", tag: "緊急" },
-  { jp: "もう一度言ってください。", romaji: "Mou ichido itte kudasai.", zh: "請再說一次。", tag: "緊急" },
-  { jp: "トイレはどこですか？", romaji: "Toire wa doko desu ka?", zh: "廁所在哪裡？", tag: "問路" },
-  { jp: "お腹が痛いです。", romaji: "Onaka ga itai desu.", zh: "我肚子痛。", tag: "醫療" },
-  { jp: "写真を撮ってもらえますか？", romaji: "Shashin o totte moraemasu ka?", zh: "可以幫我拍照嗎？", tag: "旅遊" },
-  { jp: "チェックアウトをお願いします。", romaji: "Chekku auto o onegaishimasu.", zh: "我要結帳。", tag: "購物" },
-  { jp: "道に迷いました。", romaji: "Michi ni mayoimashita.", zh: "我迷路了。", tag: "緊急" },
-];
+  /* Mode toggle */
+  #mode-wrap { padding:10px 8px 4px; }
+  #mode-toggle { display:flex; background:#f5e6f0; border-radius:24px; padding:3px; gap:2px; }
+  .mode-btn { flex:1; padding:6px 4px; border-radius:20px; border:none; cursor:pointer;
+    font-size:11px; font-weight:700; background:transparent; color:#c84b97;
+    transition:all .2s; font-family:inherit; }
+  .mode-btn.active { background:linear-gradient(135deg,#ff6b9d,#c84b97); color:#fff; }
 
-const SYSTEM_PROMPT_BASE = `你是一位專業且活潑的日語老師「さくら先生」，幫助16歲從台灣獨自來小樽留學一個月的學習者，準備JLPT N3考試並融入當地生活。
+  /* Week selector */
+  #week-wrap { padding:6px 8px; }
+  #week-wrap label { font-size:11px; color:#7b5ea7; font-weight:700; display:block; margin-bottom:4px; }
+  #week-btns { display:flex; gap:3px; flex-wrap:wrap; }
+  .week-btn { padding:3px 6px; border-radius:8px; border:none; cursor:pointer;
+    font-size:11px; font-weight:700; background:#ffd6ea; color:#c84b97;
+    transition:all .2s; font-family:inherit; }
+  .week-btn.active { background:#c84b97; color:#fff; }
+
+  /* Chat messages */
+  #chat-box { flex:1; overflow-y:auto; padding:14px 14px 8px; }
+  #chat-placeholder { flex:1; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; padding:24px; text-align:center; }
+  #chat-placeholder .big-emoji { font-size:56px; margin-bottom:12px; }
+  #chat-placeholder h2 { font-size:18px; font-weight:900; color:#c84b97; margin-bottom:8px; }
+  #chat-placeholder p { color:#555; font-size:14px; line-height:1.8; }
+  #otaru-hint { background:#fff0f8; border:2px solid #ffd6ea; border-radius:12px;
+    padding:10px 16px; font-size:13px; color:#c84b97; margin-top:10px; }
+
+  /* Context bar */
+  #ctx-bar { padding:8px 14px; display:none;
+    background:linear-gradient(90deg,#c84b97,#7b5ea7); align-items:center; gap:8px; }
+  #ctx-bar.otaru { background:linear-gradient(90deg,#7b5ea7,#00b4d8); }
+  #ctx-bar .ctx-emoji { font-size:18px; }
+  #ctx-bar .ctx-label { color:#fff; font-size:13px; font-weight:700; }
+  #ctx-bar .ctx-sub { color:rgba(255,255,255,.7); font-size:11px; }
+
+  /* Message bubbles */
+  .msg-row { display:flex; margin-bottom:10px; }
+  .msg-row.user { justify-content:flex-end; }
+  .msg-row.tutor { align-items:flex-start; gap:6px; }
+  .tutor-avatar { font-size:26px; }
+  .bubble-user { background:linear-gradient(135deg,#c84b97,#7b5ea7); color:#fff;
+    border-radius:18px 18px 4px 18px; padding:9px 14px; max-width:68%; font-size:14px; }
+  .bubble-user.otaru { background:linear-gradient(135deg,#7b5ea7,#00b4d8); }
+  .bubble-user .user-avatar { margin-left:6px; font-size:22px; }
+  .bubble-tutor { background:#fff; border:2px solid #ffd6ea; border-radius:4px 18px 18px 18px;
+    padding:11px 14px; font-size:14px; color:#333; line-height:1.8; margin-bottom:7px; }
+  .jp-card { background:linear-gradient(135deg,#fff8e7,#fff0f8); border:2px solid #ffb347;
+    border-radius:11px; padding:9px 13px; margin-bottom:7px; }
+  .jp-card .jp-main { font-size:15px; font-weight:800; color:#333; margin-bottom:3px; }
+  .jp-card .jp-romaji { font-size:12px; color:#888; margin-bottom:2px; }
+  .jp-card .jp-zh { font-size:13px; color:#c84b97; font-weight:600; }
+  .otaru-tip { background:linear-gradient(135deg,#e8f5ff,#f0e8ff); border:2px solid #00b4d8;
+    border-radius:11px; padding:8px 13px; margin-bottom:7px; font-size:12px; color:#0077a8; }
+  .vocab-pills { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:7px; }
+  .vocab-pill { background:#f0f4ff; border:1px solid #7b5ea7; border-radius:18px;
+    padding:3px 9px; font-size:12px; }
+  .vocab-pill .vw { font-weight:700; color:#7b5ea7; }
+  .vocab-pill .vr { color:#888; margin:0 3px; }
+  .vocab-pill .vm { color:#555; }
+  .quiz-box { background:linear-gradient(135deg,#f0fff4,#e8f5ff); border:2px dashed #4caf50;
+    border-radius:11px; padding:9px 13px; font-size:13px; color:#2e7d32; }
+  .encourage { font-size:12px; color:#c84b97; margin-top:5px; }
+  .typing { background:#fff; border:2px solid #ffd6ea; border-radius:4px 18px 18px 18px;
+    padding:9px 14px; font-size:14px; color:#aaa; }
+  .dots { display:inline-block; animation:pulse 1.2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:.3} 50%{opacity:1} }
+
+  /* Input */
+  #input-area { padding:10px 14px; background:#fff; border-top:2px solid #ffd6ea;
+    display:flex; gap:7px; }
+  #msg-input { flex:1; padding:10px 14px; border-radius:22px; border:2px solid #ffd6ea;
+    font-size:14px; outline:none; background:#fff8fc; font-family:inherit; }
+  #send-btn { padding:10px 18px; border-radius:22px; border:none; cursor:pointer;
+    font-size:14px; font-weight:700; background:linear-gradient(135deg,#ff6b9d,#c84b97);
+    color:#fff; font-family:inherit; transition:opacity .2s; }
+  #send-btn.otaru { background:linear-gradient(135deg,#7b5ea7,#00b4d8); }
+  #send-btn:disabled { opacity:.5; cursor:not-allowed; }
+
+  /* ── Hiragana ── */
+  #kana-table { margin:0 auto; border-collapse:separate; border-spacing:5px; }
+  #kana-table th { font-size:10px; color:#7b5ea7; padding:3px 7px; font-weight:600; }
+  #kana-table th.row-h { font-size:10px; color:#c84b97; font-weight:700; width:46px; }
+  .kana-cell { width:52px; height:52px; text-align:center; cursor:pointer; border:2px solid #ffd6ea;
+    border-radius:9px; background:#fff; transition:all .2s; vertical-align:middle; }
+  .kana-cell:hover { border-color:#c84b97; }
+  .kana-cell.flipped { background:linear-gradient(135deg,#c84b97,#7b5ea7); border-color:#c84b97; }
+  .kana-cell .k-char { font-size:19px; color:#333; }
+  .kana-cell.flipped .k-char { color:#fff; font-weight:700; }
+  .kana-cell .k-rom { font-size:9px; color:#ccc; }
+  .kana-cell.empty { border:none; cursor:default; background:transparent; }
+  .kana-tip { background:#fff0f8; border:2px solid #ffd6ea; border-radius:12px;
+    padding:12px; margin-top:14px; text-align:center; }
+
+  /* ── Plan ── */
+  .plan-map { background:linear-gradient(135deg,#e8f5ff,#f0e8ff); border:2px solid #00b4d8;
+    border-radius:14px; padding:12px; margin-bottom:14px; text-align:center; }
+  .plan-map .flow { display:flex; align-items:center; justify-content:center;
+    gap:6px; font-size:13px; flex-wrap:wrap; margin-top:6px; }
+  .flow-box { background:#fff; border-radius:8px; padding:4px 10px; }
+  .flow-box.pink { border:1px solid #ff6b9d; }
+  .flow-box.purple { border:1px solid #7b5ea7; }
+  .flow-box.blue { border:1px solid #00b4d8; }
+  .flow-arrow { color:#00b4d8; }
+  .week-card { background:#fff; border-radius:14px; padding:14px; margin-bottom:12px;
+    box-shadow:0 2px 10px rgba(0,0,0,.06); }
+  .week-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .week-tag { color:#fff; border-radius:20px; padding:3px 12px; font-size:12px; font-weight:700; }
+  .week-title { font-size:14px; font-weight:800; color:#333; }
+  .week-done { font-size:12px; color:#888; }
+  .week-progress-bar { background:#f0f0f0; border-radius:6px; height:6px; margin-bottom:10px; }
+  .week-progress-fill { border-radius:6px; height:100%; transition:width .4s; }
+  .task-item { display:flex; align-items:center; gap:8px; padding:7px 10px;
+    border-radius:9px; cursor:pointer; margin-bottom:6px; border:1.5px solid #eee;
+    background:#f9f9f9; transition:all .2s; }
+  .task-item.done { background-color:var(--task-bg); border-color:var(--task-color); }
+  .task-check { width:18px; height:18px; border-radius:50%; border:2px solid #ccc;
+    background:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .task-check.done { background:var(--task-color); border-color:var(--task-color); color:#fff; font-size:11px; }
+  .task-text { font-size:13px; color:#333; }
+  .task-item.done .task-text { text-decoration:line-through; color:#555; }
+  .task-pt { margin-left:auto; font-size:11px; font-weight:700; color:var(--task-color); }
+  .plan-footer { text-align:center; padding:14px; background:linear-gradient(135deg,#fff0f8,#f0e8ff);
+    border-radius:14px; border:2px solid #c84b97; }
+
+  /* ── Survival ── */
+  .tag-filters { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+  .tag-btn { padding:5px 12px; border-radius:18px; border:none; cursor:pointer;
+    font-size:12px; font-weight:600; background:#ffd6ea; color:#c84b97;
+    transition:all .2s; font-family:inherit; }
+  .tag-btn.active { background:#c84b97; color:#fff; }
+  .phrase-card { background:#fff; border-radius:13px; padding:12px 14px;
+    border:2px solid #ffd6ea; margin-bottom:9px; box-shadow:0 2px 8px rgba(200,75,151,.08);
+    display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+  .phrase-jp { font-size:15px; font-weight:800; color:#333; margin-bottom:3px; }
+  .phrase-rom { font-size:12px; color:#888; margin-bottom:3px; }
+  .phrase-zh { font-size:13px; color:#c84b97; font-weight:600; }
+  .phrase-tag { background:#f0f4ff; color:#7b5ea7; border-radius:10px;
+    padding:3px 8px; font-size:11px; font-weight:700; flex-shrink:0; }
+
+  /* ── Progress ── */
+  .stat-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px; margin-bottom:14px; }
+  .stat-card { background:#fff; border-radius:13px; padding:12px 8px; text-align:center; }
+  .stat-emoji { font-size:22px; }
+  .stat-value { font-size:18px; font-weight:900; }
+  .stat-label { font-size:11px; color:#888; }
+  .progress-section { background:#fff; border-radius:13px; padding:14px; margin-bottom:14px; border:2px solid #ffd6ea; }
+  .prog-row { margin-bottom:9px; }
+  .prog-header { display:flex; justify-content:space-between; font-size:12px; color:#555; margin-bottom:3px; }
+  .prog-bar { background:#f0f0f0; border-radius:7px; height:9px; }
+  .prog-fill { border-radius:7px; height:100%; transition:width .5s; }
+  .vocab-section { background:#fff; border-radius:13px; padding:14px; border:2px solid #ffd6ea; }
+  .vocab-row { display:flex; align-items:center; gap:9px; padding:7px 11px; border-radius:9px; }
+  .vocab-row:nth-child(odd) { background:#fff8fc; }
+  .vocab-row:nth-child(even) { background:#f8f0ff; }
+  .vr-word { font-size:15px; font-weight:800; color:#c84b97; min-width:55px; }
+  .vr-read { font-size:11px; color:#888; min-width:46px; }
+  .vr-mean { font-size:13px; color:#555; }
+
+  /* Shared */
+  .sec-header { font-size:14px; font-weight:800; color:#c84b97; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+  .empty-msg { text-align:center; padding:18px; color:#bbb; font-size:13px; }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<div id="header">
+  <div style="display:flex;align-items:center;gap:8px">
+    <span style="font-size:26px">🌸</span>
+    <div>
+      <div class="title">さくら先生の日語教室</div>
+      <div class="subtitle">JLPT N3 × 小樽一個月留學計畫</div>
+    </div>
+  </div>
+  <div id="badges">
+    <span class="badge" id="streak-badge">🔥0天</span>
+    <span class="badge" id="points-badge">⭐0pt 種子🌱</span>
+  </div>
+</div>
+
+<!-- ── TABS ── -->
+<div id="tabs">
+  <button class="tab-btn active" data-tab="chat">💬 對話練習</button>
+  <button class="tab-btn" data-tab="hiragana">あ 五十音</button>
+  <button class="tab-btn" data-tab="otaruplan">🗓️ 留學計畫</button>
+  <button class="tab-btn" data-tab="survival">🆘 生存句</button>
+  <button class="tab-btn" data-tab="progress">📚 單字本</button>
+</div>
+
+<!-- ══════════════════════════════════════════
+     TAB: CHAT
+══════════════════════════════════════════ -->
+<div class="page active" id="tab-chat">
+  <div id="chat-wrap">
+    <!-- Sidebar -->
+    <div id="sidebar">
+      <div id="mode-wrap">
+        <div id="mode-toggle">
+          <button class="mode-btn active" data-mode="general">🎓 N3</button>
+          <button class="mode-btn" data-mode="otaru">⛵ 小樽</button>
+        </div>
+      </div>
+      <div id="week-wrap" style="display:none">
+        <label>目前第幾週？</label>
+        <div id="week-btns">
+          <button class="week-btn active" data-w="1">W1</button>
+          <button class="week-btn" data-w="2">W2</button>
+          <button class="week-btn" data-w="3">W3</button>
+          <button class="week-btn" data-w="4">W4</button>
+        </div>
+      </div>
+      <div class="sec-title" id="sidebar-title">練習主題</div>
+      <div id="topic-list"></div>
+    </div>
+
+    <!-- Main chat -->
+    <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+      <div id="ctx-bar">
+        <span class="ctx-emoji" id="ctx-emoji"></span>
+        <span class="ctx-label" id="ctx-label"></span>
+        <span class="ctx-sub" id="ctx-sub"></span>
+      </div>
+      <div id="chat-placeholder">
+        <div class="big-emoji" id="ph-emoji">🌸</div>
+        <h2 id="ph-title">こんにちは！我是さくら先生！</h2>
+        <p id="ph-body">從左側選擇情境，開始你的日語練習！</p>
+      </div>
+      <div id="chat-box" style="display:none"></div>
+      <div id="input-area" style="display:none">
+        <input id="msg-input" type="text" placeholder="用中文或日語回答都可以！" />
+        <button id="send-btn">送出 ➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     TAB: HIRAGANA
+══════════════════════════════════════════ -->
+<div class="scroll-page" id="tab-hiragana">
+  <div style="text-align:center;margin-bottom:12px">
+    <div style="font-size:17px;font-weight:800;color:#c84b97">ひらがな 五十音表</div>
+    <div style="font-size:12px;color:#888">點擊假名查看羅馬拼音 👆</div>
+  </div>
+  <div style="overflow-x:auto">
+    <table id="kana-table">
+      <thead>
+        <tr>
+          <th class="row-h">段</th>
+          <th>あ段 a</th><th>い段 i</th><th>う段 u</th><th>え段 e</th><th>お段 o</th>
+        </tr>
+      </thead>
+      <tbody id="kana-tbody"></tbody>
+    </table>
+  </div>
+  <div class="kana-tip">
+    <div style="font-size:13px;font-weight:700;color:#c84b97">💡 小樽生存必學順序</div>
+    <div style="font-size:12px;color:#666;margin-top:6px;line-height:1.9">
+      第一週：あ・か・さ行（問路、謝謝最常用）<br>
+      第二週：た・な・は行（餐廳點餐超需要）<br>
+      第三週：ま〜わ行（交新朋友、聊天）
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     TAB: OTARU PLAN
+══════════════════════════════════════════ -->
+<div class="scroll-page" id="tab-otaruplan">
+  <div style="text-align:center;margin-bottom:14px">
+    <div style="font-size:20px">⛵</div>
+    <div style="font-size:17px;font-weight:900;color:#7b5ea7">小樽一個月留學計畫</div>
+    <div style="font-size:12px;color:#888">16歲獨自出發，勇氣滿分的冒險！</div>
+  </div>
+  <div class="plan-map">
+    <div style="font-size:13px;font-weight:700;color:#0077a8;margin-bottom:6px">📍 每日行程概念</div>
+    <div class="flow">
+      <span class="flow-box pink">🏠 寄宿家庭</span>
+      <span class="flow-arrow">→ 🚂 JR →</span>
+      <span class="flow-box purple">🏫 語言學校（4小時）</span>
+      <span class="flow-arrow">→ 下午 →</span>
+      <span class="flow-box blue">🗺️ 小樽探索</span>
+    </div>
+  </div>
+  <div id="plan-weeks"></div>
+  <div class="plan-footer">
+    <div style="font-size:20px">🎌</div>
+    <div style="font-size:13px;font-weight:700;color:#c84b97;margin-bottom:4px">留學結束時的目標</div>
+    <div style="font-size:12px;color:#666;line-height:1.9">
+      ✅ 能在小樽自在購物點餐<br>
+      ✅ 認識至少3位日本朋友<br>
+      ✅ 完成N3模擬考，正確率達60%以上<br>
+      ✅ 帶著滿滿的回憶和單字筆記回台灣！
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     TAB: SURVIVAL
+══════════════════════════════════════════ -->
+<div class="scroll-page" id="tab-survival">
+  <div style="text-align:center;margin-bottom:12px">
+    <div style="font-size:17px;font-weight:900;color:#c84b97">🆘 小樽生存必備用語</div>
+    <div style="font-size:12px;color:#888">獨自在日本，這些句子一定要會！</div>
+  </div>
+  <div class="tag-filters" id="tag-filters"></div>
+  <div id="phrase-list"></div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     TAB: PROGRESS
+══════════════════════════════════════════ -->
+<div class="scroll-page" id="tab-progress">
+  <div class="stat-grid">
+    <div class="stat-card" style="border:2px solid #ff6b9d25">
+      <div class="stat-emoji">⭐</div>
+      <div class="stat-value" id="s-pts" style="color:#ff6b9d">0pt</div>
+      <div class="stat-label">學習積分</div>
+    </div>
+    <div class="stat-card" style="border:2px solid #7b5ea725">
+      <div class="stat-emoji">📖</div>
+      <div class="stat-value" id="s-vocab" style="color:#7b5ea7">0個</div>
+      <div class="stat-label">累積單字</div>
+    </div>
+    <div class="stat-card" style="border:2px solid #ff980025">
+      <div class="stat-emoji">🔥</div>
+      <div class="stat-value" id="s-streak" style="color:#ff9800">0天</div>
+      <div class="stat-label">連續天數</div>
+    </div>
+  </div>
+  <div class="progress-section">
+    <div class="sec-header">📊 N3 &amp; 小樽留學進度</div>
+    <div class="prog-row">
+      <div class="prog-header"><span>五十音熟悉度</span><span id="p1-val" style="color:#ff6b9d;font-weight:700">0%</span></div>
+      <div class="prog-bar"><div class="prog-fill" id="p1-fill" style="background:#ff6b9d;width:0%"></div></div>
+    </div>
+    <div class="prog-row">
+      <div class="prog-header"><span>單字量（目標3700）</span><span id="p2-val" style="color:#7b5ea7;font-weight:700">0%</span></div>
+      <div class="prog-bar"><div class="prog-fill" id="p2-fill" style="background:#7b5ea7;width:0%"></div></div>
+    </div>
+    <div class="prog-row">
+      <div class="prog-header"><span>對話練習量</span><span id="p3-val" style="color:#00b4d8;font-weight:700">0%</span></div>
+      <div class="prog-bar"><div class="prog-fill" id="p3-fill" style="background:#00b4d8;width:0%"></div></div>
+    </div>
+    <div class="prog-row">
+      <div class="prog-header"><span>留學任務完成度</span><span id="p4-val" style="color:#4caf50;font-weight:700">0%</span></div>
+      <div class="prog-bar"><div class="prog-fill" id="p4-fill" style="background:#4caf50;width:0%"></div></div>
+    </div>
+  </div>
+  <div class="vocab-section">
+    <div class="sec-header">📚 我的單字本 (<span id="vocab-count">0</span>個)</div>
+    <div id="vocab-list"><div class="empty-msg">開始和さくら先生對話，單字會自動收錄！✨</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCRIPT
+══════════════════════════════════════════ -->
+<script>
+// ── API KEY ──────────────────────────────────────────
+// 請將下方的 YOUR_API_KEY_HERE 替換成你的 Anthropic API Key
+// 注意：這是前端靜態頁面，API Key 會暴露在原始碼中
+// 建議只用於個人學習，不要公開分享含有真實 Key 的版本
+const API_KEY = "YOUR_API_KEY_HERE";
+// ─────────────────────────────────────────────────────
+
+const SYSTEM_PROMPT = `你是一位專業且活潑的日語老師「さくら先生」，幫助16歲從台灣獨自來小樽留學一個月的學習者，準備JLPT N3考試並融入當地生活。
 
 學習者程度：對50音還不太熟，是初學者，但充滿冒險心！
 目標：通過N3，能夠在小樽日常生活中獨立溝通。
@@ -81,497 +432,473 @@ const SYSTEM_PROMPT_BASE = `你是一位專業且活潑的日語老師「さく�
   "vocabulary": [{"word":"單字","reading":"讀音","meaning":"中文"}],
   "quiz": "練習題或下一步引導",
   "encouragement": "鼓勵語句",
-  "otaruTip": "小樽生活小知識（可選）"
+  "otaruTip": "小樽生活小知識（可選，沒有就給空字串）"
 }`;
 
-export default function JLPTTutor() {
-  const [tab, setTab] = useState("chat");
-  const [mode, setMode] = useState("general"); // "general" | "otaru"
-  const [selectedTopic, setSelectedTopic] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [vocab, setVocab] = useState([]);
-  const [points, setPoints] = useState(0);
-  const [flippedKana, setFlippedKana] = useState({});
-  const [streak, setStreak] = useState(0);
-  const [completedTasks, setCompletedTasks] = useState({});
-  const [currentWeek, setCurrentWeek] = useState(0);
-  const [phraseFilter, setPhraseFilter] = useState("全部");
-  const messagesEndRef = useRef(null);
+const GENERAL_TOPICS = [
+  { id:"greet",  label:"日常打招呼", emoji:"👋", hint:"你好、謝謝、對不起" },
+  { id:"food",   label:"點餐買東西", emoji:"🍜", hint:"餐廳、便利商店、市場" },
+  { id:"transport",label:"交通移動",  emoji:"🚃", hint:"電車、計程車、問路" },
+  { id:"shopping",label:"購物逛街",  emoji:"🛍️", hint:"價格、尺寸、試穿" },
+  { id:"work",   label:"職場辦公",   emoji:"💼", hint:"會議、郵件、同事" },
+  { id:"hobby",  label:"興趣愛好",   emoji:"🎮", hint:"運動、音樂、旅行" },
+];
+const OTARU_TOPICS = [
+  { id:"school",   label:"語言學校報到",   emoji:"🏫", hint:"第一天去語言學校、自我介紹、問教室在哪" },
+  { id:"homestay", label:"寄宿家庭生活",   emoji:"🏠", hint:"和房東說話、用餐禮儀、洗澡時間詢問" },
+  { id:"convenience",label:"便利商店生存", emoji:"🏪", hint:"7-11買早餐、用電子支付、問店員問題" },
+  { id:"canal",    label:"小樽運河散步",   emoji:"⛵", hint:"問路、拍照請人幫忙、找到網美景點" },
+  { id:"sushi",    label:"壽司店點餐",     emoji:"🍣", hint:"小樽壽司通、點迴轉壽司、結帳說話" },
+  { id:"glassware",label:"玻璃工藝品店",  emoji:"🔮", hint:"問價格、討論顏色款式、包裝成禮物" },
+  { id:"snow",     label:"雪地緊急狀況",  emoji:"❄️", hint:"滑倒了、找不到路、手機快沒電借充電" },
+  { id:"train",    label:"JR電車通勤",    emoji:"🚂", hint:"每天坐JR從小樽到札幌上課的對話" },
+  { id:"doctor",   label:"看醫生藥局",    emoji:"🏥", hint:"感冒了、買藥、說明症狀" },
+  { id:"friend",   label:"認識日本同學",  emoji:"🧑‍🤝‍🧑", hint:"班上的日本朋友、LINE交換、放學後約玩" },
+  { id:"market",   label:"三角市場買海鮮",emoji:"🦀", hint:"小樽的海鮮市場、討價還價、試吃對話" },
+  { id:"homesick", label:"想家了怎麼辦",  emoji:"😢", hint:"跟房東說心情、打電話給爸媽、寫明信片" },
+];
 
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+const HIRAGANA_ROWS = [
+  { row:"あ行", chars:["あ","い","う","え","お"], romaji:["a","i","u","e","o"] },
+  { row:"か行", chars:["か","き","く","け","こ"], romaji:["ka","ki","ku","ke","ko"] },
+  { row:"さ行", chars:["さ","し","す","せ","そ"], romaji:["sa","shi","su","se","so"] },
+  { row:"た行", chars:["た","ち","つ","て","と"], romaji:["ta","chi","tsu","te","to"] },
+  { row:"な行", chars:["な","に","ぬ","ね","の"], romaji:["na","ni","nu","ne","no"] },
+  { row:"は行", chars:["は","ひ","ふ","へ","ほ"], romaji:["ha","hi","fu","he","ho"] },
+  { row:"ま行", chars:["ま","み","む","め","も"], romaji:["ma","mi","mu","me","mo"] },
+  { row:"や行", chars:["や","","ゆ","","よ"],     romaji:["ya","","yu","","yo"] },
+  { row:"ら行", chars:["ら","り","る","れ","ろ"], romaji:["ra","ri","ru","re","ro"] },
+  { row:"わ行", chars:["わ","","","","を"],       romaji:["wa","","","","wo"] },
+  { row:"ん",   chars:["ん","","","",""],         romaji:["n","","","",""] },
+];
 
-  const topics = mode === "otaru" ? OTARU_TOPICS : TOPICS;
+const OTARU_PLAN = [
+  { week:1, title:"抵達・適應期", color:"#ff6b9d",
+    tasks:["完成語言學校報到手續","跟寄宿家庭自我介紹","學會搭JR到市區","認識便利商店購物流程","學50音 あ〜さ行"] },
+  { week:2, title:"探索小樽",     color:"#7b5ea7",
+    tasks:["小樽運河散步拍照","壽司通吃午餐獨自點餐","玻璃工藝品店選紀念品","認識班上同學交換LINE","學50音 た〜は行"] },
+  { week:3, title:"深入融入",     color:"#00b4d8",
+    tasks:["三角市場買海鮮挑戰","JR去札幌大通公園","嘗試和日本同學放學後活動","學校發表自我介紹短篇","學50音 ま〜わ行"] },
+  { week:4, title:"成長收穫",     color:"#4caf50",
+    tasks:["獨自規劃一日小旅行","寫明信片寄回台灣給家人","學校期末小測驗準備","整理一個月單字筆記","回顧＆慶祝！"] },
+];
 
-  const startTopic = async (topic) => {
-    setSelectedTopic(topic);
-    setMessages([]);
-    setLoading(true);
-    const ctx = mode === "otaru"
-      ? `學習者是一位16歲台灣少年，獨自在小樽留學第${currentWeek + 1}週。情境：「${topic.label}」。提示：${topic.hint}。請用符合這個年齡和情境的方式開始對話，加入小樽當地的具體細節（店名、地點等）讓練習更真實。`
-      : `學習者想練習「${topic.label}」情境的日語對話。請熱情開始練習！情境提示：${topic.hint}`;
-    await callClaude(ctx, []);
-    setLoading(false);
-  };
+const SURVIVAL_PHRASES = [
+  { jp:"すみません、〜はどこですか？", romaji:"Sumimasen, ~ wa doko desu ka?", zh:"請問，〜在哪裡？", tag:"問路" },
+  { jp:"これをください。",           romaji:"Kore o kudasai.",                zh:"請給我這個。",     tag:"購物" },
+  { jp:"いくらですか？",             romaji:"Ikura desu ka?",                 zh:"多少錢？",         tag:"購物" },
+  { jp:"〜をお願いします。",         romaji:"~ o onegaishimasu.",              zh:"麻煩請給我〜",     tag:"點餐" },
+  { jp:"ありがとうございます。",     romaji:"Arigatou gozaimasu.",            zh:"非常謝謝您。",     tag:"禮貌" },
+  { jp:"わかりません。",             romaji:"Wakarimasen.",                   zh:"我不懂。",         tag:"緊急" },
+  { jp:"もう一度言ってください。",   romaji:"Mou ichido itte kudasai.",       zh:"請再說一次。",     tag:"緊急" },
+  { jp:"トイレはどこですか？",       romaji:"Toire wa doko desu ka?",         zh:"廁所在哪裡？",     tag:"問路" },
+  { jp:"お腹が痛いです。",           romaji:"Onaka ga itai desu.",            zh:"我肚子痛。",       tag:"醫療" },
+  { jp:"写真を撮ってもらえますか？", romaji:"Shashin o totte moraemasu ka?",  zh:"可以幫我拍照嗎？", tag:"旅遊" },
+  { jp:"チェックアウトをお願いします。",romaji:"Chekku auto o onegaishimasu.",zh:"我要結帳。",       tag:"購物" },
+  { jp:"道に迷いました。",           romaji:"Michi ni mayoimashita.",         zh:"我迷路了。",       tag:"緊急" },
+];
 
-  const callClaude = async (userText, history) => {
-    try {
-      const msgs = [...history, { role: "user", content: userText }];
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: SYSTEM_PROMPT_BASE,
-          messages: msgs,
-        }),
-      });
-      const data = await res.json();
-      const raw = data.content.map(b => b.text || "").join("");
-      const clean = raw.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(clean);
+// ── State ─────────────────────────────────────────────
+let state = {
+  mode: "general",
+  currentWeek: 1,
+  selectedTopic: null,
+  messages: [],         // [{role, content, parsed}]
+  vocab: [],            // [{word,reading,meaning}]
+  points: 0,
+  streak: 0,
+  flippedKana: {},      // "ri-ci": true
+  completedTasks: {},   // "wi-ti": true
+  phraseFilter: "全部",
+  msgCount: 0,
+};
 
-      setMessages(prev => [...prev,
-        { role: "user", content: userText, id: Date.now() - 1 },
-        { role: "assistant", content: raw, parsed, id: Date.now() }
-      ]);
+// ── Helpers ───────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const levelLabel = p => p < 50 ? "種子🌱" : p < 150 ? "新芽🌿" : p < 300 ? "花朵🌸" : "大樹🌳";
 
-      if (parsed.vocabulary?.length) {
-        setVocab(prev => {
-          const ex = new Set(prev.map(v => v.word));
-          return [...prev, ...parsed.vocabulary.filter(v => !ex.has(v.word))];
-        });
-        setPoints(p => p + parsed.vocabulary.length * 5);
-        setStreak(s => s + 1);
-      }
-    } catch {
-      setMessages(prev => [...prev, {
-        role: "assistant", content: "",
-        parsed: { message: "抱歉，連線出了點問題，請再試一次！😅", japanese: "", romaji: "", meaning: "", vocabulary: [], quiz: "", encouragement: "", otaruTip: "" },
-        id: Date.now()
-      }]);
-    }
-  };
-
-  const sendMessage = async () => {
-    if (!input.trim() || loading) return;
-    const text = input.trim(); setInput(""); setLoading(true);
-    await callClaude(text, messages.map(m => ({ role: m.role, content: m.content })));
-    setLoading(false);
-  };
-
-  const toggleTask = (wk, ti) => {
-    const key = `${wk}-${ti}`;
-    setCompletedTasks(prev => ({ ...prev, [key]: !prev[key] }));
-    if (!completedTasks[`${wk}-${ti}`]) setPoints(p => p + 10);
-  };
-
-  const levelLabel = points < 50 ? "種子🌱" : points < 150 ? "新芽🌿" : points < 300 ? "花朵🌸" : "大樹🌳";
-  const phraseTags = ["全部", "問路", "購物", "點餐", "禮貌", "緊急", "旅遊", "醫療"];
-  const filteredPhrases = phraseFilter === "全部" ? SURVIVAL_PHRASES : SURVIVAL_PHRASES.filter(p => p.tag === phraseFilter);
-
-  const ModeToggle = () => (
-    <div style={{ display: "flex", background: "#f5e6f0", borderRadius: 24, padding: 3, gap: 2 }}>
-      {[["general","🎓 N3練習"],["otaru","⛵ 小樽留學"]].map(([id, label]) => (
-        <button key={id} onClick={() => { setMode(id); setSelectedTopic(null); setMessages([]); }} style={{
-          padding: "6px 14px", borderRadius: 20, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700,
-          background: mode === id ? "linear-gradient(135deg, #ff6b9d, #c84b97)" : "transparent",
-          color: mode === id ? "#fff" : "#c84b97", transition: "all 0.2s"
-        }}>{label}</button>
-      ))}
-    </div>
-  );
-
-  return (
-    <div style={{ fontFamily: "'Noto Sans TC', sans-serif", minHeight: "100vh", background: "linear-gradient(135deg, #fff0f5 0%, #f0f4ff 50%, #f0fff4 100%)" }}>
-      {/* Header */}
-      <div style={{ background: "linear-gradient(90deg, #ff6b9d, #c84b97, #7b5ea7)", padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "0 4px 15px rgba(200,75,151,0.3)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 26 }}>🌸</span>
-          <div>
-            <div style={{ color: "#fff", fontWeight: 900, fontSize: 16 }}>さくら先生の日語教室</div>
-            <div style={{ color: "#ffd6ea", fontSize: 11 }}>JLPT N3 × 小樽一個月留學計畫</div>
-          </div>
-        </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <div style={{ background: "rgba(255,255,255,0.2)", borderRadius: 20, padding: "3px 10px", color: "#fff", fontSize: 12 }}>🔥{streak}天</div>
-          <div style={{ background: "rgba(255,255,255,0.2)", borderRadius: 20, padding: "3px 10px", color: "#fff", fontSize: 12 }}>⭐{points}pt {levelLabel}</div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div style={{ display: "flex", background: "#fff", borderBottom: "3px solid #ffd6ea", overflowX: "auto" }}>
-        {[["chat","💬 對話練習"],["hiragana","あ 五十音"],["otaruplan","🗓️ 留學計畫"],["survival","🆘 生存句"],["progress","📚 單字本"]].map(([id, label]) => (
-          <button key={id} onClick={() => setTab(id)} style={{
-            flex: "0 0 auto", padding: "11px 14px", border: "none", cursor: "pointer", fontSize: 13, fontWeight: tab === id ? 800 : 500,
-            background: tab === id ? "#fff0f8" : "#fff", color: tab === id ? "#c84b97" : "#888",
-            borderBottom: tab === id ? "3px solid #c84b97" : "3px solid transparent", marginBottom: -3, whiteSpace: "nowrap"
-          }}>{label}</button>
-        ))}
-      </div>
-
-      {/* ── CHAT TAB ── */}
-      {tab === "chat" && (
-        <div style={{ display: "flex", height: "calc(100vh - 138px)" }}>
-          {/* Sidebar */}
-          <div style={{ width: 128, background: "#fff", borderRight: "2px solid #ffd6ea", display: "flex", flexDirection: "column", overflowY: "auto" }}>
-            <div style={{ padding: "10px 8px 4px" }}><ModeToggle /></div>
-            {mode === "otaru" && (
-              <div style={{ padding: "6px 8px" }}>
-                <div style={{ fontSize: 11, color: "#7b5ea7", fontWeight: 700, marginBottom: 4 }}>目前第幾週？</div>
-                <div style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
-                  {[1,2,3,4].map(w => (
-                    <button key={w} onClick={() => setCurrentWeek(w-1)} style={{
-                      padding: "3px 6px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700,
-                      background: currentWeek === w-1 ? "#c84b97" : "#ffd6ea", color: currentWeek === w-1 ? "#fff" : "#c84b97"
-                    }}>W{w}</button>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div style={{ fontSize: 11, color: "#c84b97", fontWeight: 700, padding: "6px 8px 2px" }}>
-              {mode === "otaru" ? "小樽情境" : "練習主題"}
-            </div>
-            <div style={{ overflowY: "auto", padding: "0 6px 8px" }}>
-              {topics.map(t => (
-                <button key={t.id} onClick={() => startTopic(t)} style={{
-                  display: "flex", flexDirection: "column", alignItems: "center", width: "100%",
-                  padding: "8px 4px", marginBottom: 5, border: selectedTopic?.id === t.id ? "2px solid #c84b97" : "2px solid #ffd6ea",
-                  borderRadius: 10, background: selectedTopic?.id === t.id ? "#fff0f8" : "#fff", cursor: "pointer"
-                }}>
-                  <span style={{ fontSize: 20 }}>{t.emoji}</span>
-                  <span style={{ fontSize: 10, color: "#555", marginTop: 3, textAlign: "center", lineHeight: 1.3 }}>{t.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Chat */}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-            {!selectedTopic ? (
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center" }}>
-                {mode === "otaru" ? (
-                  <>
-                    <div style={{ fontSize: 56, marginBottom: 12 }}>⛵</div>
-                    <div style={{ fontSize: 18, fontWeight: 900, color: "#7b5ea7", marginBottom: 8 }}>歡迎來到小樽！</div>
-                    <div style={{ color: "#555", fontSize: 14, marginBottom: 6, lineHeight: 1.8 }}>
-                      你是一個16歲的台灣少年，獨自踏上北海道的冒險旅程 🗾<br/>
-                      白天在語言學校上課，下午探索小樽的運河、壽司、玻璃工藝品！
-                    </div>
-                    <div style={{ background: "#fff0f8", border: "2px solid #ffd6ea", borderRadius: 12, padding: "10px 16px", fontSize: 13, color: "#c84b97" }}>
-                      先選擇你目前的週次，再點選想練習的情境 👈
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div style={{ fontSize: 56, marginBottom: 12 }}>🌸</div>
-                    <div style={{ fontSize: 18, fontWeight: 900, color: "#c84b97", marginBottom: 6 }}>こんにちは！我是さくら先生！</div>
-                    <div style={{ color: "#666", fontSize: 14 }}>從左側選擇情境，開始你的日語練習！</div>
-                  </>
-                )}
-              </div>
-            ) : (
-              <>
-                <div style={{ padding: "8px 14px", background: mode === "otaru" ? "linear-gradient(90deg, #7b5ea7, #00b4d8)" : "linear-gradient(90deg, #ff6b9d, #c84b97)", display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 18 }}>{selectedTopic.emoji}</span>
-                  <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>{selectedTopic.label}</span>
-                  {mode === "otaru" && <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 11 }}>第{currentWeek+1}週・小樽</span>}
-                </div>
-                <div style={{ flex: 1, overflowY: "auto", padding: "14px 14px 8px" }}>
-                  {messages.map((msg, i) => (
-                    <div key={msg.id || i}>
-                      {msg.role === "user" && (
-                        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
-                          <div style={{ background: mode === "otaru" ? "linear-gradient(135deg, #7b5ea7, #00b4d8)" : "linear-gradient(135deg, #c84b97, #7b5ea7)", color: "#fff", borderRadius: "18px 18px 4px 18px", padding: "9px 14px", maxWidth: "68%", fontSize: 14 }}>
-                            {msg.content}
-                          </div>
-                          <span style={{ marginLeft: 6, fontSize: 22 }}>🙋</span>
-                        </div>
-                      )}
-                      {msg.role === "assistant" && msg.parsed && (
-                        <div style={{ marginBottom: 14 }}>
-                          <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
-                            <span style={{ fontSize: 26 }}>{mode === "otaru" ? "🌸" : "🌸"}</span>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ background: "#fff", border: "2px solid #ffd6ea", borderRadius: "4px 18px 18px 18px", padding: "11px 14px", fontSize: 14, color: "#333", lineHeight: 1.8, marginBottom: 7 }}>
-                                {msg.parsed.message}
-                              </div>
-                              {msg.parsed.japanese && (
-                                <div style={{ background: "linear-gradient(135deg, #fff8e7, #fff0f8)", border: "2px solid #ffb347", borderRadius: 11, padding: "9px 13px", marginBottom: 7 }}>
-                                  <div style={{ fontSize: 15, fontWeight: 800, color: "#333", marginBottom: 3 }}>📝 {msg.parsed.japanese}</div>
-                                  <div style={{ fontSize: 12, color: "#888", marginBottom: 2 }}>🔤 {msg.parsed.romaji}</div>
-                                  <div style={{ fontSize: 13, color: "#c84b97", fontWeight: 600 }}>💡 {msg.parsed.meaning}</div>
-                                </div>
-                              )}
-                              {msg.parsed.otaruTip && (
-                                <div style={{ background: "linear-gradient(135deg, #e8f5ff, #f0e8ff)", border: "2px solid #00b4d8", borderRadius: 11, padding: "8px 13px", marginBottom: 7, fontSize: 12, color: "#0077a8" }}>
-                                  ⛵ <strong>小樽小知識：</strong>{msg.parsed.otaruTip}
-                                </div>
-                              )}
-                              {msg.parsed.vocabulary?.length > 0 && (
-                                <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 7 }}>
-                                  {msg.parsed.vocabulary.map((v, vi) => (
-                                    <div key={vi} style={{ background: "#f0f4ff", border: "1px solid #7b5ea7", borderRadius: 18, padding: "3px 9px", fontSize: 12 }}>
-                                      <span style={{ fontWeight: 700, color: "#7b5ea7" }}>{v.word}</span>
-                                      <span style={{ color: "#888", margin: "0 3px" }}>({v.reading})</span>
-                                      <span style={{ color: "#555" }}>{v.meaning}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                              {msg.parsed.quiz && i === messages.length - 1 && (
-                                <div style={{ background: "linear-gradient(135deg, #f0fff4, #e8f5ff)", border: "2px dashed #4caf50", borderRadius: 11, padding: "9px 13px", fontSize: 13, color: "#2e7d32" }}>
-                                  🎯 {msg.parsed.quiz}
-                                </div>
-                              )}
-                              {msg.parsed.encouragement && (
-                                <div style={{ fontSize: 12, color: "#c84b97", marginTop: 5 }}>✨ {msg.parsed.encouragement}</div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  {loading && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}>
-                      <span style={{ fontSize: 24 }}>🌸</span>
-                      <div style={{ background: "#fff", border: "2px solid #ffd6ea", borderRadius: "4px 18px 18px 18px", padding: "9px 14px", fontSize: 14, color: "#aaa" }}>
-                        さくら先生正在想... 💭
-                      </div>
-                    </div>
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-                <div style={{ padding: "10px 14px", background: "#fff", borderTop: "2px solid #ffd6ea", display: "flex", gap: 7 }}>
-                  <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMessage()}
-                    placeholder={mode === "otaru" ? "在小樽，你會怎麼說？試試看！" : "用中文或日語回答都可以！"}
-                    style={{ flex: 1, padding: "10px 14px", borderRadius: 22, border: "2px solid #ffd6ea", fontSize: 14, outline: "none", background: "#fff8fc" }}
-                    disabled={loading} />
-                  <button onClick={sendMessage} disabled={loading || !input.trim()} style={{
-                    padding: "10px 18px", borderRadius: 22, border: "none", cursor: "pointer", fontSize: 14, fontWeight: 700,
-                    background: mode === "otaru" ? "linear-gradient(135deg, #7b5ea7, #00b4d8)" : "linear-gradient(135deg, #ff6b9d, #c84b97)",
-                    color: "#fff", opacity: loading || !input.trim() ? 0.5 : 1
-                  }}>送出 ➤</button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── 五十音 TAB ── */}
-      {tab === "hiragana" && (
-        <div style={{ padding: 14, overflowY: "auto", height: "calc(100vh - 138px)" }}>
-          <div style={{ textAlign: "center", marginBottom: 12 }}>
-            <div style={{ fontSize: 17, fontWeight: 800, color: "#c84b97" }}>ひらがな 五十音表</div>
-            <div style={{ fontSize: 12, color: "#888" }}>點擊假名查看羅馬拼音 👆</div>
-          </div>
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ margin: "0 auto", borderCollapse: "separate", borderSpacing: 5 }}>
-              <thead>
-                <tr>
-                  <th style={{ width: 46, fontSize: 11, color: "#c84b97", padding: "3px 5px" }}>段</th>
-                  {["あ段 a","い段 i","う段 u","え段 e","お段 o"].map(h => (
-                    <th key={h} style={{ fontSize: 10, color: "#7b5ea7", padding: "3px 7px", fontWeight: 600 }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {HIRAGANA_ROWS.map((row, ri) => (
-                  <tr key={ri}>
-                    <td style={{ fontSize: 10, color: "#c84b97", fontWeight: 700, textAlign: "center" }}>{row.row}</td>
-                    {row.chars.map((char, ci) => {
-                      const key = `${ri}-${ci}`, flipped = flippedKana[key];
-                      return (
-                        <td key={ci} onClick={() => char && setFlippedKana(p => ({ ...p, [key]: !p[key] }))} style={{
-                          width: 52, height: 52, textAlign: "center", cursor: char ? "pointer" : "default",
-                          background: !char ? "transparent" : flipped ? "linear-gradient(135deg, #c84b97, #7b5ea7)" : "#fff",
-                          border: char ? `2px solid ${flipped ? "#c84b97" : "#ffd6ea"}` : "none",
-                          borderRadius: 9, transition: "all 0.2s"
-                        }}>
-                          {char && <>
-                            <div style={{ fontSize: 19, color: flipped ? "#fff" : "#333", fontWeight: flipped ? 700 : 400 }}>
-                              {flipped ? row.romaji[ci] : char}
-                            </div>
-                            {!flipped && <div style={{ fontSize: 9, color: "#ccc" }}>{row.romaji[ci]}</div>}
-                          </>}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div style={{ marginTop: 14, padding: 12, background: "#fff0f8", borderRadius: 12, border: "2px solid #ffd6ea", textAlign: "center" }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#c84b97" }}>💡 小樽生存必學順序</div>
-            <div style={{ fontSize: 12, color: "#666", marginTop: 6, lineHeight: 1.9 }}>
-              第一週：あ・か・さ行（問路、謝謝最常用）<br/>
-              第二週：た・な・は行（餐廳點餐超需要）<br/>
-              第三週：ま〜わ行（交新朋友、聊天）
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── 留學計畫 TAB ── */}
-      {tab === "otaruplan" && (
-        <div style={{ padding: 14, overflowY: "auto", height: "calc(100vh - 138px)" }}>
-          <div style={{ textAlign: "center", marginBottom: 14 }}>
-            <div style={{ fontSize: 20 }}>⛵</div>
-            <div style={{ fontSize: 17, fontWeight: 900, color: "#7b5ea7" }}>小樽一個月留學計畫</div>
-            <div style={{ fontSize: 12, color: "#888" }}>16歲獨自出發，勇氣滿分的冒險！</div>
-          </div>
-
-          {/* Map illustration */}
-          <div style={{ background: "linear-gradient(135deg, #e8f5ff, #f0e8ff)", border: "2px solid #00b4d8", borderRadius: 14, padding: 12, marginBottom: 14, textAlign: "center" }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#0077a8", marginBottom: 6 }}>📍 每日行程概念</div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 13, flexWrap: "wrap" }}>
-              <span style={{ background: "#fff", borderRadius: 8, padding: "4px 10px", border: "1px solid #00b4d8" }}>🏠 寄宿家庭</span>
-              <span style={{ color: "#00b4d8" }}>→ 🚂 JR → </span>
-              <span style={{ background: "#fff", borderRadius: 8, padding: "4px 10px", border: "1px solid #7b5ea7" }}>🏫 語言學校（4小時）</span>
-              <span style={{ color: "#7b5ea7" }}>→ 下午 → </span>
-              <span style={{ background: "#fff", borderRadius: 8, padding: "4px 10px", border: "1px solid #ff6b9d" }}>🗺️ 小樽探索</span>
-            </div>
-          </div>
-
-          {OTARU_PLAN.map((wk, wi) => {
-            const done = wk.tasks.filter((_, ti) => completedTasks[`${wi}-${ti}`]).length;
-            return (
-              <div key={wi} style={{ background: "#fff", borderRadius: 14, padding: 14, marginBottom: 12, border: `2px solid ${wk.color}40`, boxShadow: "0 2px 10px rgba(0,0,0,0.06)" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ background: wk.color, color: "#fff", borderRadius: 20, padding: "3px 12px", fontSize: 12, fontWeight: 700 }}>第{wk.week}週</div>
-                    <span style={{ fontSize: 14, fontWeight: 800, color: "#333" }}>{wk.title}</span>
-                  </div>
-                  <div style={{ fontSize: 12, color: "#888" }}>{done}/{wk.tasks.length} 完成</div>
-                </div>
-                <div style={{ background: "#f0f0f0", borderRadius: 6, height: 6, marginBottom: 10 }}>
-                  <div style={{ width: `${(done / wk.tasks.length) * 100}%`, background: wk.color, borderRadius: 6, height: "100%", transition: "width 0.4s" }} />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {wk.tasks.map((task, ti) => {
-                    const key = `${wi}-${ti}`, done = completedTasks[key];
-                    return (
-                      <div key={ti} onClick={() => toggleTask(wi, ti)} style={{
-                        display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", borderRadius: 9, cursor: "pointer",
-                        background: done ? `${wk.color}15` : "#f9f9f9", border: `1.5px solid ${done ? wk.color : "#eee"}`,
-                        transition: "all 0.2s"
-                      }}>
-                        <div style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${done ? wk.color : "#ccc"}`, background: done ? wk.color : "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                          {done && <span style={{ color: "#fff", fontSize: 11 }}>✓</span>}
-                        </div>
-                        <span style={{ fontSize: 13, color: done ? "#555" : "#333", textDecoration: done ? "line-through" : "none" }}>{task}</span>
-                        {done && <span style={{ marginLeft: "auto", fontSize: 11, color: wk.color, fontWeight: 700 }}>+10pt</span>}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-          <div style={{ textAlign: "center", padding: 14, background: "linear-gradient(135deg, #fff0f8, #f0e8ff)", borderRadius: 14, border: "2px solid #c84b97" }}>
-            <div style={{ fontSize: 20 }}>🎌</div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#c84b97", marginBottom: 4 }}>留學結束時的目標</div>
-            <div style={{ fontSize: 12, color: "#666", lineHeight: 1.9 }}>
-              ✅ 能在小樽自在購物點餐<br/>
-              ✅ 認識至少3位日本朋友<br/>
-              ✅ 完成N3模擬考，正確率達60%以上<br/>
-              ✅ 帶著滿滿的回憶和單字筆記回台灣！
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── 生存句 TAB ── */}
-      {tab === "survival" && (
-        <div style={{ padding: 14, overflowY: "auto", height: "calc(100vh - 138px)" }}>
-          <div style={{ textAlign: "center", marginBottom: 12 }}>
-            <div style={{ fontSize: 17, fontWeight: 900, color: "#c84b97" }}>🆘 小樽生存必備用語</div>
-            <div style={{ fontSize: 12, color: "#888" }}>獨自在日本，這些句子一定要會！</div>
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
-            {phraseTags.map(tag => (
-              <button key={tag} onClick={() => setPhraseFilter(tag)} style={{
-                padding: "5px 12px", borderRadius: 18, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
-                background: phraseFilter === tag ? "#c84b97" : "#ffd6ea", color: phraseFilter === tag ? "#fff" : "#c84b97"
-              }}>{tag}</button>
-            ))}
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-            {filteredPhrases.map((p, i) => (
-              <div key={i} style={{ background: "#fff", borderRadius: 13, padding: "12px 14px", border: "2px solid #ffd6ea", boxShadow: "0 2px 8px rgba(200,75,151,0.08)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: "#333", marginBottom: 3 }}>{p.jp}</div>
-                    <div style={{ fontSize: 12, color: "#888", marginBottom: 3 }}>🔤 {p.romaji}</div>
-                    <div style={{ fontSize: 13, color: "#c84b97", fontWeight: 600 }}>💡 {p.zh}</div>
-                  </div>
-                  <span style={{ background: "#f0f4ff", color: "#7b5ea7", borderRadius: 10, padding: "3px 8px", fontSize: 11, fontWeight: 700, flexShrink: 0, marginLeft: 8 }}>{p.tag}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── 單字本 TAB ── */}
-      {tab === "progress" && (
-        <div style={{ padding: 14, overflowY: "auto", height: "calc(100vh - 138px)" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 9, marginBottom: 14 }}>
-            {[
-              { label: "學習積分", value: `${points}pt`, emoji: "⭐", color: "#ff6b9d" },
-              { label: "累積單字", value: `${vocab.length}個`, emoji: "📖", color: "#7b5ea7" },
-              { label: "連續天數", value: `${streak}天`, emoji: "🔥", color: "#ff9800" },
-            ].map((s, i) => (
-              <div key={i} style={{ background: "#fff", borderRadius: 13, padding: "12px 8px", textAlign: "center", border: `2px solid ${s.color}25` }}>
-                <div style={{ fontSize: 22 }}>{s.emoji}</div>
-                <div style={{ fontSize: 18, fontWeight: 900, color: s.color }}>{s.value}</div>
-                <div style={{ fontSize: 11, color: "#888" }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{ background: "#fff", borderRadius: 13, padding: 14, marginBottom: 14, border: "2px solid #ffd6ea" }}>
-            <div style={{ fontSize: 14, fontWeight: 800, color: "#c84b97", marginBottom: 9 }}>📊 N3 & 小樽留學進度</div>
-            {[
-              { label: "五十音熟悉度", value: Math.min(100, Object.keys(flippedKana).length * 3), color: "#ff6b9d" },
-              { label: "單字量（目標3700）", value: Math.min(100, Math.round(vocab.length / 37)), color: "#7b5ea7" },
-              { label: "對話練習量", value: Math.min(100, messages.filter(m => m.role === "user").length * 4), color: "#00b4d8" },
-              { label: "留學任務完成度", value: Math.min(100, Math.round(Object.values(completedTasks).filter(Boolean).length / 20 * 100)), color: "#4caf50" },
-            ].map((p, i) => (
-              <div key={i} style={{ marginBottom: 9 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#555", marginBottom: 3 }}>
-                  <span>{p.label}</span><span style={{ fontWeight: 700, color: p.color }}>{p.value}%</span>
-                </div>
-                <div style={{ background: "#f0f0f0", borderRadius: 7, height: 9 }}>
-                  <div style={{ width: `${p.value}%`, background: `linear-gradient(90deg, ${p.color}, ${p.color}88)`, borderRadius: 7, height: "100%", transition: "width 0.5s" }} />
-                </div>
-              </div>
-            ))}
-          </div>
-          <div style={{ background: "#fff", borderRadius: 13, padding: 14, border: "2px solid #ffd6ea" }}>
-            <div style={{ fontSize: 14, fontWeight: 800, color: "#c84b97", marginBottom: 8 }}>📚 我的單字本（{vocab.length}個）</div>
-            {vocab.length === 0 ? (
-              <div style={{ textAlign: "center", padding: 18, color: "#bbb", fontSize: 13 }}>
-                開始和さくら先生對話，單字會自動收錄！✨
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-                {vocab.map((v, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 9, padding: "7px 11px", background: i % 2 === 0 ? "#fff8fc" : "#f8f0ff", borderRadius: 9 }}>
-                    <span style={{ fontSize: 15, fontWeight: 800, color: "#c84b97", minWidth: 55 }}>{v.word}</span>
-                    <span style={{ fontSize: 11, color: "#888", minWidth: 46 }}>({v.reading})</span>
-                    <span style={{ fontSize: 13, color: "#555" }}>{v.meaning}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
+function updateBadges() {
+  $("streak-badge").textContent = `🔥${state.streak}天`;
+  $("points-badge").textContent = `⭐${state.points}pt ${levelLabel(state.points)}`;
 }
+
+function updateProgress() {
+  const kanaFlipped = Object.keys(state.flippedKana).length;
+  const userMsgs    = state.messages.filter(m => m.role === "user").length;
+  const taskDone    = Object.values(state.completedTasks).filter(Boolean).length;
+  const p1 = Math.min(100, kanaFlipped * 3);
+  const p2 = Math.min(100, Math.round(state.vocab.length / 37));
+  const p3 = Math.min(100, userMsgs * 4);
+  const p4 = Math.min(100, Math.round(taskDone / 20 * 100));
+  [["p1",p1,"#ff6b9d"],["p2",p2,"#7b5ea7"],["p3",p3,"#00b4d8"],["p4",p4,"#4caf50"]].forEach(([id,val,col]) => {
+    $(`${id}-val`).textContent = `${val}%`;
+    $(`${id}-fill`).style.width = `${val}%`;
+  });
+  $("s-pts").textContent    = `${state.points}pt`;
+  $("s-vocab").textContent  = `${state.vocab.length}個`;
+  $("s-streak").textContent = `${state.streak}天`;
+  $("vocab-count").textContent = state.vocab.length;
+  renderVocabList();
+}
+
+function renderVocabList() {
+  const el = $("vocab-list");
+  if (!state.vocab.length) { el.innerHTML = '<div class="empty-msg">開始和さくら先生對話，單字會自動收錄！✨</div>'; return; }
+  el.innerHTML = state.vocab.map((v,i) =>
+    `<div class="vocab-row"><span class="vr-word">${v.word}</span><span class="vr-read">(${v.reading})</span><span class="vr-mean">${v.meaning}</span></div>`
+  ).join("");
+}
+
+// ── Tabs ──────────────────────────────────────────────
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    const t = btn.dataset.tab;
+    document.querySelectorAll(".page,.scroll-page").forEach(p => p.classList.remove("active"));
+    $(`tab-${t}`).classList.add("active");
+    if (t === "progress") updateProgress();
+  });
+});
+
+// ── Mode toggle ───────────────────────────────────────
+document.querySelectorAll(".mode-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    state.mode = btn.dataset.mode;
+    state.selectedTopic = null;
+    state.messages = [];
+    $("week-wrap").style.display = state.mode === "otaru" ? "block" : "none";
+    $("sidebar-title").textContent = state.mode === "otaru" ? "小樽情境" : "練習主題";
+    renderTopics();
+    resetChat();
+  });
+});
+
+// ── Week buttons ──────────────────────────────────────
+document.querySelectorAll(".week-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".week-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    state.currentWeek = parseInt(btn.dataset.w);
+  });
+});
+
+// ── Topics ────────────────────────────────────────────
+function renderTopics() {
+  const topics = state.mode === "otaru" ? OTARU_TOPICS : GENERAL_TOPICS;
+  $("topic-list").innerHTML = topics.map(t =>
+    `<button class="topic-btn ${state.selectedTopic?.id === t.id ? 'active' : ''}" data-id="${t.id}">
+       <span class="t-emoji">${t.emoji}</span>
+       <span class="t-label">${t.label}</span>
+     </button>`
+  ).join("");
+  document.querySelectorAll(".topic-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const topics = state.mode === "otaru" ? OTARU_TOPICS : GENERAL_TOPICS;
+      const topic = topics.find(t => t.id === btn.dataset.id);
+      startTopic(topic);
+    });
+  });
+}
+renderTopics();
+
+// ── Chat ──────────────────────────────────────────────
+function resetChat() {
+  $("chat-placeholder").style.display = "flex";
+  $("chat-box").style.display = "none";
+  $("input-area").style.display = "none";
+  $("ctx-bar").style.display = "none";
+  renderTopics();
+  if (state.mode === "otaru") {
+    $("ph-emoji").textContent = "⛵";
+    $("ph-title").textContent = "歡迎來到小樽！";
+    $("ph-body").innerHTML = `你是一個16歲的台灣少年，獨自踏上北海道的冒險旅程 🗾<br>白天在語言學校上課，下午探索小樽的運河、壽司、玻璃工藝品！`;
+    if (!$("otaru-hint")) {
+      const hint = document.createElement("div");
+      hint.id = "otaru-hint";
+      hint.className = "otaru-hint"; // handled by inline style below
+      hint.style.cssText = "background:#fff0f8;border:2px solid #ffd6ea;border-radius:12px;padding:10px 16px;font-size:13px;color:#c84b97;margin-top:10px";
+      hint.textContent = "先選擇你目前的週次，再點選想練習的情境 👈";
+      $("chat-placeholder").appendChild(hint);
+    }
+  } else {
+    $("ph-emoji").textContent = "🌸";
+    $("ph-title").textContent = "こんにちは！我是さくら先生！";
+    $("ph-body").textContent = "從左側選擇情境，開始你的日語練習！";
+    const hint = $("otaru-hint");
+    if (hint) hint.remove();
+  }
+}
+
+async function startTopic(topic) {
+  state.selectedTopic = topic;
+  state.messages = [];
+  $("chat-placeholder").style.display = "none";
+  $("chat-box").style.display = "block";
+  $("input-area").style.display = "flex";
+  const ctxBar = $("ctx-bar");
+  ctxBar.style.display = "flex";
+  ctxBar.className = state.mode === "otaru" ? "otaru" : "";
+  // Rebuild ctx-bar children
+  ctxBar.innerHTML = `
+    <span class="ctx-emoji">${topic.emoji}</span>
+    <span class="ctx-label">${topic.label}</span>
+    ${state.mode === "otaru" ? `<span class="ctx-sub">第${state.currentWeek}週・小樽</span>` : ""}`;
+  $("send-btn").className = state.mode === "otaru" ? "otaru" : "";
+  $("chat-box").innerHTML = "";
+  renderTopics();
+
+  const ctx = state.mode === "otaru"
+    ? `學習者是一位16歲台灣少年，獨自在小樽留學第${state.currentWeek}週。情境：「${topic.label}」。提示：${topic.hint}。請用符合這個年齡和情境的方式開始對話，加入小樽當地的具體細節（店名、地點等）讓練習更真實。`
+    : `學習者想練習「${topic.label}」情境的日語對話。請熱情開始練習！情境提示：${topic.hint}`;
+
+  await callClaude(ctx);
+}
+
+function addUserBubble(text) {
+  const div = document.createElement("div");
+  div.className = "msg-row user";
+  div.innerHTML = `<div class="bubble-user ${state.mode === 'otaru' ? 'otaru' : ''}">${escHtml(text)}</div><span class="user-avatar">🙋</span>`;
+  $("chat-box").appendChild(div);
+  $("chat-box").scrollTop = $("chat-box").scrollHeight;
+}
+
+function addTypingBubble() {
+  const div = document.createElement("div");
+  div.className = "msg-row tutor";
+  div.id = "typing-bubble";
+  div.innerHTML = `<span class="tutor-avatar">🌸</span><div class="typing">さくら先生正在想... <span class="dots">●●●</span></div>`;
+  $("chat-box").appendChild(div);
+  $("chat-box").scrollTop = $("chat-box").scrollHeight;
+}
+
+function removeTypingBubble() {
+  const el = $("typing-bubble");
+  if (el) el.remove();
+}
+
+function addTutorBubble(parsed) {
+  const div = document.createElement("div");
+  div.className = "msg-row tutor";
+  let html = `<span class="tutor-avatar">🌸</span><div style="flex:1">`;
+  html += `<div class="bubble-tutor">${escHtml(parsed.message)}</div>`;
+  if (parsed.japanese) {
+    html += `<div class="jp-card">
+      <div class="jp-main">📝 ${escHtml(parsed.japanese)}</div>
+      <div class="jp-romaji">🔤 ${escHtml(parsed.romaji)}</div>
+      <div class="jp-zh">💡 ${escHtml(parsed.meaning)}</div>
+    </div>`;
+  }
+  if (parsed.otaruTip) {
+    html += `<div class="otaru-tip">⛵ <strong>小樽小知識：</strong>${escHtml(parsed.otaruTip)}</div>`;
+  }
+  if (parsed.vocabulary?.length) {
+    html += `<div class="vocab-pills">${parsed.vocabulary.map(v =>
+      `<div class="vocab-pill"><span class="vw">${escHtml(v.word)}</span><span class="vr">(${escHtml(v.reading)})</span><span class="vm">${escHtml(v.meaning)}</span></div>`
+    ).join("")}</div>`;
+  }
+  if (parsed.quiz) {
+    html += `<div class="quiz-box">🎯 ${escHtml(parsed.quiz)}</div>`;
+  }
+  if (parsed.encouragement) {
+    html += `<div class="encourage">✨ ${escHtml(parsed.encouragement)}</div>`;
+  }
+  html += `</div>`;
+  div.innerHTML = html;
+  $("chat-box").appendChild(div);
+  $("chat-box").scrollTop = $("chat-box").scrollHeight;
+}
+
+function escHtml(str) {
+  if (!str) return "";
+  return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+async function callClaude(userText) {
+  addUserBubble(userText);
+  addTypingBubble();
+  $("send-btn").disabled = true;
+
+  const apiMessages = [
+    ...state.messages.map(m => ({ role: m.role, content: m.content })),
+    { role: "user", content: userText }
+  ];
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": API_KEY,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        system: SYSTEM_PROMPT,
+        messages: apiMessages,
+      }),
+    });
+
+    const data = await res.json();
+    const raw = (data.content || []).map(b => b.text || "").join("");
+    const clean = raw.replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(clean);
+
+    state.messages.push({ role: "user", content: userText });
+    state.messages.push({ role: "assistant", content: raw });
+    state.msgCount++;
+
+    removeTypingBubble();
+    addTutorBubble(parsed);
+
+    if (parsed.vocabulary?.length) {
+      const existing = new Set(state.vocab.map(v => v.word));
+      const newWords = parsed.vocabulary.filter(v => !existing.has(v.word));
+      state.vocab.push(...newWords);
+      state.points += newWords.length * 5;
+      state.streak++;
+      updateBadges();
+    }
+  } catch(e) {
+    removeTypingBubble();
+    addTutorBubble({ message: "抱歉，連線出了點問題，請再試一次！😅（請確認 API Key 是否已正確填入）", japanese:"", romaji:"", meaning:"", vocabulary:[], quiz:"", encouragement:"", otaruTip:"" });
+  }
+
+  $("send-btn").disabled = false;
+  $("msg-input").focus();
+}
+
+$("send-btn").addEventListener("click", sendMsg);
+$("msg-input").addEventListener("keydown", e => { if (e.key === "Enter") sendMsg(); });
+
+function sendMsg() {
+  const text = $("msg-input").value.trim();
+  if (!text) return;
+  $("msg-input").value = "";
+  callClaude(text);
+}
+
+// ── Hiragana ──────────────────────────────────────────
+(function buildKana() {
+  const tbody = $("kana-tbody");
+  HIRAGANA_ROWS.forEach((row, ri) => {
+    const tr = document.createElement("tr");
+    const th = document.createElement("th");
+    th.className = "row-h"; th.textContent = row.row; tr.appendChild(th);
+    row.chars.forEach((char, ci) => {
+      const td = document.createElement("td");
+      if (!char) { td.className = "kana-cell empty"; tr.appendChild(td); return; }
+      td.className = "kana-cell";
+      td.innerHTML = `<div class="k-char">${char}</div><div class="k-rom">${row.romaji[ci]}</div>`;
+      td.addEventListener("click", () => {
+        const key = `${ri}-${ci}`;
+        state.flippedKana[key] = !state.flippedKana[key];
+        if (state.flippedKana[key]) {
+          td.classList.add("flipped");
+          td.innerHTML = `<div class="k-char">${row.romaji[ci]}</div>`;
+        } else {
+          td.classList.remove("flipped");
+          td.innerHTML = `<div class="k-char">${char}</div><div class="k-rom">${row.romaji[ci]}</div>`;
+        }
+      });
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+})();
+
+// ── Plan ──────────────────────────────────────────────
+(function buildPlan() {
+  $("plan-weeks").innerHTML = OTARU_PLAN.map((wk, wi) => {
+    const tasksHtml = wk.tasks.map((task, ti) => `
+      <div class="task-item" id="task-${wi}-${ti}" style="--task-color:${wk.color};--task-bg:${wk.color}15" data-wi="${wi}" data-ti="${ti}">
+        <div class="task-check" id="check-${wi}-${ti}"></div>
+        <span class="task-text" id="tasktext-${wi}-${ti}">${task}</span>
+      </div>`).join("");
+    return `
+      <div class="week-card" style="border:2px solid ${wk.color}40">
+        <div class="week-header">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="week-tag" style="background:${wk.color}">第${wk.week}週</span>
+            <span class="week-title">${wk.title}</span>
+          </div>
+          <span class="week-done" id="done-${wi}">0/${wk.tasks.length} 完成</span>
+        </div>
+        <div class="week-progress-bar">
+          <div class="week-progress-fill" id="wfill-${wi}" style="background:${wk.color};width:0%"></div>
+        </div>
+        ${tasksHtml}
+      </div>`;
+  }).join("");
+
+  document.querySelectorAll(".task-item").forEach(el => {
+    el.addEventListener("click", () => {
+      const wi = parseInt(el.dataset.wi), ti = parseInt(el.dataset.ti);
+      const key = `${wi}-${ti}`;
+      state.completedTasks[key] = !state.completedTasks[key];
+      const done = state.completedTasks[key];
+      if (done) state.points += 10;
+      updateBadges();
+
+      // Update task UI
+      el.classList.toggle("done", done);
+      const chk = $(`check-${wi}-${ti}`);
+      chk.className = done ? "task-check done" : "task-check";
+      chk.textContent = done ? "✓" : "";
+      $(`tasktext-${wi}-${ti}`).style.textDecoration = done ? "line-through" : "none";
+
+      // Append pt badge
+      let ptBadge = el.querySelector(".task-pt");
+      if (done && !ptBadge) {
+        const span = document.createElement("span");
+        span.className = "task-pt";
+        span.style.setProperty("--task-color", OTARU_PLAN[wi].color);
+        span.textContent = "+10pt";
+        el.appendChild(span);
+      } else if (!done && ptBadge) ptBadge.remove();
+
+      // Update progress bar
+      const tasksDone = OTARU_PLAN[wi].tasks.filter((_,i2) => state.completedTasks[`${wi}-${i2}`]).length;
+      $(`done-${wi}`).textContent = `${tasksDone}/${OTARU_PLAN[wi].tasks.length} 完成`;
+      $(`wfill-${wi}`).style.width = `${tasksDone / OTARU_PLAN[wi].tasks.length * 100}%`;
+    });
+  });
+})();
+
+// ── Survival phrases ──────────────────────────────────
+const PHRASE_TAGS = ["全部","問路","購物","點餐","禮貌","緊急","旅遊","醫療"];
+
+function renderPhrases() {
+  const filtered = state.phraseFilter === "全部" ? SURVIVAL_PHRASES : SURVIVAL_PHRASES.filter(p => p.tag === state.phraseFilter);
+  $("phrase-list").innerHTML = filtered.map(p =>
+    `<div class="phrase-card">
+       <div>
+         <div class="phrase-jp">${escHtml(p.jp)}</div>
+         <div class="phrase-rom">🔤 ${escHtml(p.romaji)}</div>
+         <div class="phrase-zh">💡 ${escHtml(p.zh)}</div>
+       </div>
+       <span class="phrase-tag">${p.tag}</span>
+     </div>`
+  ).join("");
+}
+
+$("tag-filters").innerHTML = PHRASE_TAGS.map(tag =>
+  `<button class="tag-btn${tag === "全部" ? " active" : ""}" data-tag="${tag}">${tag}</button>`
+).join("");
+
+document.querySelectorAll(".tag-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tag-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    state.phraseFilter = btn.dataset.tag;
+    renderPhrases();
+  });
+});
+renderPhrases();
+</script>
+</body>
+</html>
